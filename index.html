@@ -961,7 +961,7 @@ kbd {
     return "c";
   }
   function saveUnit(u) {
-    try { localStorage.setItem(WX_UNITS_KEY, u); } catch (e) {}
+    try { localStorage.setItem(WX_UNITS_KEY, JSON.stringify(u)); } catch (e) {}
   }
 
   // fetch that gives up after WX_TIMEOUT_MS and treats non-OK replies as failures.
@@ -1115,7 +1115,12 @@ kbd {
     wxUnit = u;
     saveUnit(u);
     renderUnits();
-    loadWeather(() => { wxUnit = prev; saveUnit(prev); renderUnits(); });
+    // On failure, go back to the unit of the data on screen (an earlier click may have been superseded).
+    loadWeather(() => {
+      wxUnit = wxData ? wxData.unit : prev;
+      saveUnit(wxUnit);
+      renderUnits();
+    });
   }
 
   // --- City search ---
@@ -1227,7 +1232,13 @@ kbd {
       else if (wxCity) cancelChange();
     }
   });
-  $wxInput.addEventListener("blur", () => { if (!$wxResults.hidden) { closeList(); } });
+  // Leaving the input drops a pending search so results can't reopen after focus has moved on.
+  $wxInput.addEventListener("blur", () => {
+    searchReq++;
+    clearTimeout(searchTimer);
+    closeList();
+    if ($wxSearchMsg.textContent === "Searching…") setSearchMsg("");
+  });
   // Keep focus in the input while choosing with the mouse.
   $wxResults.addEventListener("mousedown", e => e.preventDefault());
   $wxResults.addEventListener("mouseover", e => {
