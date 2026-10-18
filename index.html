@@ -136,6 +136,8 @@ h1 {
   text-align: right; white-space: nowrap; overflow: hidden; text-overflow: clip;
   letter-spacing: -0.02em;
 }
+.lcd-main { animation: lcd-blink 1.1s step-end infinite; }
+@keyframes lcd-blink { 50% { opacity: .15; } }
 .lcd-main.small { font-size: 30px; }
 .lcd-main.tiny { font-size: 22px; }
 .lcd-main.error { font-size: 20px; font-family: var(--font-body); font-weight: 600; letter-spacing: 0; line-height: 2.3; }
@@ -238,6 +240,7 @@ kbd {
 
 @media (prefers-reduced-motion: reduce) {
   .key { transition: none; }
+  .lcd-main { animation: none; }
 }
 </style>
 </head>
