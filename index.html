@@ -930,6 +930,7 @@ kbd {
   let searchTimer = null;
   let results = [];
   let active = -1;
+  let lastPointer = null;       // pointer position over the results list, to tell real moves from layout shifts
 
   function loadCity() {
     try {
@@ -1145,6 +1146,7 @@ kbd {
   function showResults(list) {
     closeList();
     results = list;
+    lastPointer = null;
     list.forEach((c, i) => {
       const li = document.createElement("li");
       li.className = "wx-option";
@@ -1241,9 +1243,14 @@ kbd {
   });
   // Keep focus in the input while choosing with the mouse.
   $wxResults.addEventListener("mousedown", e => e.preventDefault());
-  $wxResults.addEventListener("mouseover", e => {
+  // Only a real pointer move changes the highlight. Browsers also fire mouse events when the list
+  // opens or scrolls under a resting pointer, so the first event after opening just records the position.
+  $wxResults.addEventListener("mousemove", e => {
+    const moved = lastPointer && (e.clientX !== lastPointer.x || e.clientY !== lastPointer.y);
+    lastPointer = { x: e.clientX, y: e.clientY };
+    if (!moved) return;
     const li = e.target.closest(".wx-option");
-    if (li) setActive(+li.dataset.index);
+    if (li && +li.dataset.index !== active) setActive(+li.dataset.index);
   });
   $wxResults.addEventListener("click", e => {
     const li = e.target.closest(".wx-option");
