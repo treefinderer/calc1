@@ -287,11 +287,11 @@ kbd {
       <div class="radio" id="radio">
         <span class="radio-dot" aria-hidden="true"></span>
         <div class="radio-info">
-          <span class="radio-name">Indie Pop Rocks!</span>
+          <span class="radio-name">Radio Paradise · Rock Mix</span>
           <span class="radio-status" id="radioStatus">Press any key to start the radio</span>
         </div>
         <button class="mute-btn" id="muteBtn" type="button" aria-pressed="false">Mute</button>
-        <audio id="radioAudio" preload="none" src="https://ice1.somafm.com/indiepop-128-mp3"></audio>
+        <audio id="radioAudio" preload="none" src="https://stream.radioparadise.com/rock-128"></audio>
       </div>
 
       <div class="lcd" role="status" aria-live="polite">
@@ -652,7 +652,7 @@ kbd {
   const $audio = document.getElementById("radioAudio");
   const $radioStatus = document.getElementById("radioStatus");
   const $muteBtn = document.getElementById("muteBtn");
-  const STREAMS = ["https://ice1.somafm.com/indiepop-128-mp3", "https://ice2.somafm.com/indiepop-128-mp3"];
+  const STREAMS = ["https://stream.radioparadise.com/rock-128", "https://stream.radioparadise.com/mp3-128"];
   let streamIndex = 0;
   let started = false;
   let muted = false;
@@ -672,7 +672,7 @@ kbd {
     $audio.play().catch(() => { started = false; setStatus("Press any key to start the radio"); renderRadio(); });
   }
   $audio.addEventListener("playing", () => {
-    setStatus('Live from <a href="https://somafm.com/indiepop/" target="_blank" rel="noopener">SomaFM</a>');
+    setStatus('Live from <a href="https://radioparadise.com/" target="_blank" rel="noopener">Radio Paradise</a>');
     renderRadio();
   });
   $audio.addEventListener("error", () => {
