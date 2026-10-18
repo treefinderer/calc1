@@ -4,7 +4,7 @@
 - **Branch:** `feature/0001-weather-widget`
 - **Commit tested:** `0f59da2`
 - **Spec:** `docs/specs/0001-weather-widget.md`
-- **Verdict:** **FAIL** (1 of 46 criteria: AC10 fails when the mouse pointer is resting where the results list appears)
+- **Verdict:** **PASS** after Round 2 (commit `06a7e66`). Round 1 failed AC10; see "Round 2" at the end.
 
 ## How it was tested
 
@@ -104,3 +104,32 @@ This happened during normal testing (Forget city, then type Berlin, Enter, Down,
 
 - Pressing Tab on a freshly loaded page (focus on the body, before reaching the weather input) starts the radio. That keydown happens outside the weather panel, so this is the existing "any key starts the radio" behavior and not the weather rule. Keyboard-only visitors will still hear the radio start on their first Tab.
 - With focus on the radio's Play/Mute button, Enter activates that button instead of `=`. This was already the behavior before this change.
+
+## Round 2
+
+- **Date:** 2026-10-18
+- **Commit tested:** `06a7e66` ("Highlight city results only on real mouse movement")
+- **Verdict:** **PASS**. Failure 1 is fixed and nothing regressed.
+
+Same setup as Round 1: `python3 -m http.server 8000`, the built-in browser at 1280x900, real clicks and keys, and real Open-Meteo searches. I checked that the served page had the fix (`lastPointer` was in the source).
+
+| # | Check | Result | What I saw |
+|---|-------|--------|------------|
+| 10 | Failure 1 reproduction via Forget city | PASS | Clicked Forget city and left the mouse still, then typed "Berlin". The pointer was over "Brunswick, Maryland" (CSS `:hover` confirmed), yet no option was highlighted (`aria-activedescendant` absent). Down highlighted wxOpt0 "Berlin, State of Berlin, Germany". |
+| 10 | Same via Change city, Down pressed repeatedly with the pointer resting over the list | PASS | The list scrolls (scrollHeight 258 > clientHeight 240). The highlight went null → wxOpt0 → 1 → 2 → 3 → 4, then Down wrapped to wxOpt0 and Up wrapped to wxOpt4. Scrolling never moved the highlight. |
+| 11 | Enter picks highlighted result | PASS | Enter after Down loaded Berlin, State of Berlin, Germany. The list closed, and `tally-weather-v1` holds Berlin, Germany. |
+| 12 | Real mouse move highlights; click picks | PASS | Moving the mouse onto "Berlin, New Hampshire" highlighted it (wxOpt1). Moving to "Berlin, New Jersey" moved the highlight to wxOpt2. Clicking loaded Berlin, New Jersey. The radio stayed idle. |
+| 13 | Esc closes list, keeps text | PASS | List hidden, aria-expanded false, input still "Berlin", focus still in input. |
+| 8 | "Lon" shows Searching… then results | PASS | "Searching…" then 5 results starting "London, England, United Kingdom". Nothing was highlighted when they opened. |
+
+Regression (Round 2):
+
+| Check | Result |
+|-------|--------|
+| `2 + 3 × 4 =` → 14; `2,400 − 15% =` → 2,040; `5 ÷ 0` → "Can't divide by zero" | PASS |
+| Backspace (123 → 12), Esc (→ 0) | PASS |
+| Clicking tape line "14" puts 14 on the display | PASS |
+| Radio: Play gave "Live from Radio Paradise", Mute gave "Muted" (audio paused, left paused) | PASS |
+| Console errors | PASS (none) |
+
+The two weather localStorage keys were cleared at the end.
