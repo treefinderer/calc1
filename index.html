@@ -288,9 +288,9 @@ kbd {
         <span class="radio-dot" aria-hidden="true"></span>
         <div class="radio-info">
           <span class="radio-name">Radio Paradise · Rock Mix</span>
-          <span class="radio-status" id="radioStatus">Press any key to start the radio</span>
+          <span class="radio-status" id="radioStatus">Press Play or any key to start</span>
         </div>
-        <button class="mute-btn" id="muteBtn" type="button" aria-pressed="false">Mute</button>
+        <button class="mute-btn" id="muteBtn" type="button" aria-pressed="false">Play</button>
         <audio id="radioAudio" preload="none" src="https://stream.radioparadise.com/rock-128"></audio>
       </div>
 
@@ -653,61 +653,90 @@ kbd {
   const $radioStatus = document.getElementById("radioStatus");
   const $muteBtn = document.getElementById("muteBtn");
   const STREAMS = ["https://stream.radioparadise.com/rock-128", "https://stream.radioparadise.com/mp3-128"];
+  // state: "idle" (not started yet), "loading", "playing", "muted", "failed"
+  let state = "idle";
   let streamIndex = 0;
-  let started = false;
-  let muted = false;
-  try { muted = localStorage.getItem("tally-muted") === "1"; } catch (e) {}
+  let loadTimer = null;
 
   function setStatus(text) { $radioStatus.innerHTML = text; }
   function renderRadio() {
-    $muteBtn.textContent = muted ? "Unmute" : "Mute";
-    $muteBtn.setAttribute("aria-pressed", String(muted));
-    $radio.classList.toggle("playing", started && !muted && !$audio.paused);
+    const label = { idle: "Play", loading: "Mute", playing: "Mute", muted: "Unmute", failed: "Retry" }[state];
+    $muteBtn.textContent = label;
+    $muteBtn.setAttribute("aria-pressed", String(state === "muted"));
+    $radio.classList.toggle("playing", state === "playing");
+    const status = {
+      idle: "Press Play or any key to start",
+      loading: "Tuning in…",
+      playing: 'Live from <a href="https://radioparadise.com/" target="_blank" rel="noopener">Radio Paradise</a>',
+      muted: "Muted"
+    }[state];
+    if (status) setStatus(status);
   }
-  function startRadio() {
-    if (started || muted) return;
-    started = true;
-    setStatus("Tuning in…");
+  function fail(message) {
+    clearTimeout(loadTimer);
+    $audio.pause();
+    state = "failed";
+    setStatus(message);
+    renderRadio();
+  }
+  function playStream() {
+    state = "loading";
+    renderRadio();
+    clearTimeout(loadTimer);
+    // Reload the source each time so a live stream starts at the current moment.
+    $audio.src = STREAMS[streamIndex];
     $audio.muted = false;
-    $audio.play().catch(() => { started = false; setStatus("Press any key to start the radio"); renderRadio(); });
+    $audio.volume = 1;
+    const attempt = $audio.play();
+    if (attempt && attempt.catch) {
+      attempt.catch(err => {
+        if (state !== "loading") return;
+        if (err && err.name === "NotAllowedError") {
+          state = "idle";
+          setStatus("Your browser blocked sound. Press Play to start");
+          $muteBtn.textContent = "Play";
+        } else {
+          tryNextStream();
+        }
+      });
+    }
+    loadTimer = setTimeout(() => {
+      if (state === "loading") fail("Can't reach the station. Your network may block radio streams");
+    }, 15000);
   }
+  function tryNextStream() {
+    if (streamIndex < STREAMS.length - 1) { streamIndex++; playStream(); }
+    else { streamIndex = 0; fail("Can't reach the station. Your network may block radio streams"); }
+  }
+
   $audio.addEventListener("playing", () => {
-    setStatus('Live from <a href="https://radioparadise.com/" target="_blank" rel="noopener">Radio Paradise</a>');
+    if (state !== "loading") return;
+    clearTimeout(loadTimer);
+    state = "playing";
     renderRadio();
   });
-  $audio.addEventListener("error", () => {
-    if (streamIndex < STREAMS.length - 1) {
-      $audio.src = STREAMS[++streamIndex];
-      if (started && !muted) $audio.play().catch(() => {});
-    } else {
-      started = false;
-      setStatus("Radio unavailable right now");
-      renderRadio();
-    }
-  });
+  $audio.addEventListener("error", () => { if (state === "loading") tryNextStream(); });
 
   $muteBtn.addEventListener("click", e => {
     e.stopPropagation();
-    muted = !muted;
-    try { localStorage.setItem("tally-muted", muted ? "1" : "0"); } catch (err) {}
-    if (muted) {
+    if (state === "playing" || state === "loading") {
+      clearTimeout(loadTimer);
       $audio.pause();
-      setStatus("Muted");
-    } else if (started) {
-      // Reload so a live stream resumes at the current moment instead of where it paused.
-      $audio.src = STREAMS[streamIndex];
-      setStatus("Tuning in…");
-      $audio.play().catch(() => {});
+      state = "muted";
+      renderRadio();
     } else {
-      startRadio();
+      playStream();
     }
-    renderRadio();
   });
 
-  ["pointerdown", "keydown"].forEach(type =>
-    document.addEventListener(type, e => { if (e.target !== $muteBtn) startRadio(); }, { capture: true })
+  // The first click, tap or key press anywhere starts the radio. Browsers allow sound only from these events.
+  function autoStart(e) {
+    if (state !== "idle" || e.target === $muteBtn) return;
+    playStream();
+  }
+  ["click", "keydown", "touchend"].forEach(type =>
+    document.addEventListener(type, autoStart, { capture: true })
   );
-  if (muted) setStatus("Muted");
 
   renderRadio();
   render();
