@@ -25,22 +25,27 @@ brief, passes results between stages, and enforces the gates. It doesn't write f
 | 2 | Build | `developer` | Commits on branch `feature/NNNN-slug` | Developer's self-check passes |
 | 3 | Review | `code-reviewer` | Review verdict with findings | Verdict is APPROVE |
 | 4 | Test | `qa-tester` | `docs/qa/NNNN-slug.md` | Every acceptance criterion PASS |
-| 5 | Release | `release-manager` | `CHANGELOG.md` entry, branch pushed, pull request opened | **Owner reviews and merges the PR on GitHub** |
+| 5 | Release | `release-manager` | `CHANGELOG.md` entry, branch pushed, merged into `main` and pushed | Review APPROVE and QA PASS (no owner gate) |
 | 6 | Verify | `release-manager` | Live-site check after the merge | Live site shows the change |
 
-Pull requests:
+Merging (owner's instruction, 2026-10-19: "don't ask me to merge. Do it instead of me"):
 
-- `main` changes only through pull requests, and **only the owner merges them**. Agents never merge into `main` or push to it.
-- Stage 5 pushes `feature/NNNN-slug` and opens a PR whose description links the spec and QA report and lists the acceptance criteria. Without the GitHub CLI, it gives the owner the compare link instead: `https://github.com/treefinderer/calc1/compare/main...feature/NNNN-slug?expand=1`.
-- If the owner leaves review comments, they go back to `developer`, then through review and QA again, and the branch is pushed to update the same PR.
-- After the owner merges, run stage 6: pull `main`, check the live site, delete the local branch.
-- **The owner's own PRs:** when the owner asks for one to be reviewed, run `code-reviewer` (and `qa-tester` if it changes behavior) on that branch and report the verdict. Don't push to the owner's branches unless asked.
+- After review APPROVE and QA PASS, `release-manager` merges into `main` itself. Don't ask the owner to approve the push or the merge.
+- Run the merge as separate commands, each allowed by `.claude/settings.local.json` (a local-only file, not in git):
+  1. `git switch main`
+  2. `git pull --ff-only origin main`
+  3. `git merge --no-ff feature/NNNN-slug -m "Merge feature/NNNN-slug: <summary> (spec NNNN)" -m "Co-Authored-By: ..."`
+  4. `GIT_TERMINAL_PROMPT=0 git push origin main`
+- Never force-push. If any step is refused, asks for a login or hits a conflict, stop and tell the owner; don't work around it.
+- The feature branch is still pushed before merging, so GitHub keeps its history. Without the GitHub CLI no PR page is created; the merge commit and the changelog are the record.
+- After the merge, run stage 6, then delete the feature branch locally and on GitHub.
+- **The owner's own PRs:** when the owner asks for one to be reviewed, run `code-reviewer` (and `qa-tester` if it changes behavior) on that branch and report the verdict. Don't push to or merge the owner's branches unless asked.
 
 Rules:
 
 - **Numbering.** `NNNN` is the next free four-digit number in `docs/specs/`. The spec, branch and QA report share it.
 - **Loops.** A review with REQUEST CHANGES, or a QA FAIL, goes back to `developer` with the findings. After two failed rounds, stop and ask the owner.
-- **Fast lane.** A trivial change (wording, a color, spacing, a typo) may skip stage 1: the orchestrator writes one line of acceptance criteria in the brief and tells the owner it is using the fast lane. Review, QA and the release gate still apply.
-- **Owner gates are real.** Push a feature branch and open its PR only after the owner's go-ahead for that change. Never merge to `main`; that is the owner's job on GitHub.
+- **Fast lane.** A trivial change (wording, a color, spacing, a typo) may skip stage 1: the orchestrator writes one line of acceptance criteria in the brief and tells the owner it is using the fast lane. Review and QA still apply.
+- **Owner gate.** The owner approves each spec (stage 1). After that, the change ships on its own once review and QA pass.
 - **Status updates.** After each stage, tell the owner in one or two lines what finished and what's next.
 - **Briefs.** Agents start with no memory of the conversation. Each brief names the spec file, the branch, the files involved and what done looks like.
