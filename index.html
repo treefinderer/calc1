@@ -28,6 +28,8 @@
   --lcd-dim: #5f6d55;
   --paper: #fbfaf5;
   --paper-line: #e4e3da;
+  --news-link: #24401f;
+  --news-link-visited: #5a4670;
   --shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 2px 0 var(--body-edge), 0 18px 40px -18px rgba(30,40,25,.35);
   --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -41,6 +43,7 @@
     --accent: #ec7640; --accent-fg: #1a0f08;
     --lcd: #2f3a29; --lcd-fg: #c9e3b0; --lcd-dim: #7f9a6c;
     --paper: #1f231d; --paper-line: #2e332b;
+    --news-link: #d4e8c0; --news-link-visited: #cdbfe6;
     --shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 2px 0 var(--body-edge), 0 18px 40px -18px rgba(0,0,0,.7);
     color-scheme: dark;
   }
@@ -52,6 +55,7 @@
   --accent: #ec7640; --accent-fg: #1a0f08;
   --lcd: #2f3a29; --lcd-fg: #c9e3b0; --lcd-dim: #7f9a6c;
   --paper: #1f231d; --paper-line: #2e332b;
+  --news-link: #d4e8c0; --news-link-visited: #cdbfe6;
   --shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 2px 0 var(--body-edge), 0 18px 40px -18px rgba(0,0,0,.7);
   color-scheme: dark;
 }
@@ -278,7 +282,7 @@ h1 {
   position: relative;
 }
 .weather-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 30px; }
-.weather-head h2 {
+.weather-head h2, .news h2 {
   margin: 0; font-family: var(--font-display); font-weight: 500;
   font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
 }
@@ -317,22 +321,22 @@ h1 {
 .wx-city:focus { outline: none; }
 .wx-city:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .wx-place { margin: -8px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
-.wx-loading { margin: 0; font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.wx-loading::before {
+.wx-loading, .news-loading { margin: 0; font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.wx-loading::before, .news-loading::before {
   content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent); animation: lcd-blink 1.1s step-end infinite;
 }
 .wx-error { display: grid; gap: 8px; justify-items: start; }
 .wx-error p { margin: 0; font-weight: 500; }
-.wx-btn {
+.wx-btn, .news-btn {
   appearance: none; border: 0; cursor: pointer;
   font: 600 13px var(--font-body);
   background: var(--key-op); color: var(--key-op-fg);
   border-radius: 9px; padding: 8px 14px;
   box-shadow: 0 2px 0 var(--body-edge);
 }
-.wx-btn:active { transform: translateY(2px); box-shadow: none; }
-.wx-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wx-btn:active, .news-btn:active { transform: translateY(2px); box-shadow: none; }
+.wx-btn:focus-visible, .news-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .wx-now { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .wx-icon { flex: none; width: 52px; height: 52px; }
 .wx-icon svg { display: block; width: 100%; height: 100%; }
@@ -370,10 +374,73 @@ kbd {
   box-shadow: 0 1px 0 var(--body-edge);
 }
 
+/* News: category tabs over a paper panel of headlines; two columns of stories on wide screens. */
+.news {
+  background: var(--body);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  position: relative;
+}
+.news-tabs { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.news-tab {
+  appearance: none; border: 0; cursor: pointer;
+  font: 500 14px var(--font-body); color: var(--key-fg); background: var(--key);
+  border-radius: 9px; padding: 7px 14px; white-space: nowrap;
+  box-shadow: 0 2px 0 var(--body-edge);
+}
+.news-tab:hover { filter: brightness(1.04); }
+.news-tab[aria-selected="true"] { background: var(--key-op); color: var(--key-op-fg); font-weight: 700; }
+.news-tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.news-panel {
+  background: var(--paper); color: var(--fg);
+  border-radius: 14px; padding: 6px 18px 14px;
+  display: grid; gap: 10px; min-width: 0;
+}
+.news-panel:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.news-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px;
+}
+.news-item {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start;
+  padding: 12px 0; border-bottom: 1px solid var(--paper-line); min-width: 0;
+}
+.news-item.has-thumb { grid-template-columns: 112px minmax(0, 1fr); }
+.news-thumb { display: block; width: 112px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--paper-line); }
+.news-text { display: grid; gap: 4px; min-width: 0; }
+.news-link {
+  font-weight: 600; font-size: 15px; line-height: 1.35;
+  color: var(--news-link); text-decoration: none; overflow-wrap: anywhere; border-radius: 3px;
+}
+.news-link:visited { color: var(--news-link-visited); }
+.news-link:hover, .news-link:focus-visible { text-decoration: underline; }
+.news-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.news-meta { margin: 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.news-summary { margin: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.news-loading { padding-top: 10px; }
+.news-updated, .news-note { margin: 0; font-size: 13px; color: var(--muted); }
+.news-note.problem { color: var(--fg); font-weight: 500; }
+.news-error { display: grid; gap: 8px; justify-items: start; padding-top: 10px; }
+.news-error p { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.news-credit { margin: 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.news-credit a { color: inherit; border-radius: 3px; }
+.news-credit a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .news { padding: 14px; }
+  .news-panel { padding: 4px 14px 12px; }
+  .news-list { grid-template-columns: minmax(0, 1fr); }
+  .news-item.has-thumb { grid-template-columns: 88px minmax(0, 1fr); }
+  .news-thumb { width: 88px; height: 56px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .key { transition: none; }
   .lcd-main { animation: none; }
-  .wx-loading::before { animation: none; }
+  .wx-loading::before, .news-loading::before { animation: none; }
 }
 </style>
 </head>
@@ -501,6 +568,24 @@ kbd {
     <span><kbd>Esc</kbd> clear</span>
     <span><kbd>%</kbd> percent</span>
   </div>
+
+  <section class="news" id="news" aria-labelledby="newsTitle">
+    <h2 id="newsTitle">News</h2>
+    <div class="news-tabs" id="newsTabs" role="tablist" aria-label="News categories">
+      <button class="news-tab" type="button" role="tab" id="newsTab-politics" data-cat="politics" aria-controls="newsPanel-politics" aria-selected="true" tabindex="0">Politics</button>
+      <button class="news-tab" type="button" role="tab" id="newsTab-technology" data-cat="technology" aria-controls="newsPanel-technology" aria-selected="false" tabindex="-1">Technology</button>
+      <button class="news-tab" type="button" role="tab" id="newsTab-science" data-cat="science" aria-controls="newsPanel-science" aria-selected="false" tabindex="-1">Science</button>
+      <button class="news-tab" type="button" role="tab" id="newsTab-stocks" data-cat="stocks" aria-controls="newsPanel-stocks" aria-selected="false" tabindex="-1">Stock Market</button>
+      <button class="news-tab" type="button" role="tab" id="newsTab-sports" data-cat="sports" aria-controls="newsPanel-sports" aria-selected="false" tabindex="-1">Sports</button>
+    </div>
+    <div class="news-panel" id="newsPanel-politics" role="tabpanel" aria-labelledby="newsTab-politics" tabindex="0"></div>
+    <div class="news-panel" id="newsPanel-technology" role="tabpanel" aria-labelledby="newsTab-technology" tabindex="0" hidden></div>
+    <div class="news-panel" id="newsPanel-science" role="tabpanel" aria-labelledby="newsTab-science" tabindex="0" hidden></div>
+    <div class="news-panel" id="newsPanel-stocks" role="tabpanel" aria-labelledby="newsTab-stocks" tabindex="0" hidden></div>
+    <div class="news-panel" id="newsPanel-sports" role="tabpanel" aria-labelledby="newsTab-sports" tabindex="0" hidden></div>
+    <p class="news-credit">Headlines from BBC News, BBC Sport and CNBC, converted by <a href="https://rss2json.com/" target="_blank" rel="noopener">rss2json</a>.</p>
+    <p class="visually-hidden" id="newsLive" aria-live="polite"></p>
+  </section>
 </div>
 
 <script>
@@ -776,8 +861,8 @@ kbd {
     /^\d$/.test(a) ? `[data-digit="${a}"]` : a in SYMBOL ? `[data-op="${CSS.escape(a)}"]` : `[data-action="${a}"]`
   );
   document.addEventListener("keydown", e => {
-    // Keys typed or pressed inside the weather panel belong to it, not the calculator.
-    if (e.target.closest && e.target.closest("#weather")) return;
+    // Keys typed or pressed inside the weather panel or the news belong to them, not the calculator.
+    if (e.target.closest && e.target.closest("#weather, #news")) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const a = /^\d$/.test(e.key) ? e.key : KEYMAP[e.key];
     if (!a) return;
@@ -889,7 +974,7 @@ kbd {
   // The first click, tap or key press anywhere starts the radio. Browsers allow sound only from these events.
   function autoStart(e) {
     if (state !== "idle" || e.target === $muteBtn) return;
-    if (e.target.closest && e.target.closest("#weather")) return;
+    if (e.target.closest && e.target.closest("#weather, #news")) return;
     playStream();
   }
   ["click", "keydown", "touchend"].forEach(type =>
@@ -1285,6 +1370,294 @@ kbd {
 
   if (wxCity) { showView(); loadWeather(); }
   else showSearchState();
+
+  // Like fetchJSON, but a timer fails the request after `ms` even if fetch never settles.
+  // A reply that arrives after that is ignored.
+  function fetchJSONWithin(url, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("Timed out")), ms);
+    });
+    return Promise.race([Promise.resolve().then(() => fetchJSON(url)), timeout])
+      .finally(() => clearTimeout(timer));
+  }
+
+  // News: headlines per category from public RSS feeds, converted to JSON by rss2json.
+  const NEWS_KEY = "tally-news-tab-v1";
+  const NEWS_REFRESH_MS = 15 * 60 * 1000;
+  const NEWS_TIMEOUT_MS = 15000;
+  const NEWS_MAX = 10;
+  const NEWS_ORDER = ["politics", "technology", "science", "stocks", "sports"];
+  const NEWS_FEEDS = {
+    politics: { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC News" },
+    technology: { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC News" },
+    science: { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "BBC News" },
+    stocks: { url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069", source: "CNBC" },
+    sports: { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport" }
+  };
+  const NEWS_ERROR = "Couldn't load the headlines.";
+  const NEWS_EMPTY = "No stories in this category right now.";
+  const $news = document.getElementById("news");
+  const $newsTabs = document.getElementById("newsTabs");
+  const $newsLive = document.getElementById("newsLive");
+  const newsTabEl = id => document.getElementById("newsTab-" + id);
+  const newsPanelEl = id => document.getElementById("newsPanel-" + id);
+
+  // Session cache per category: stories (null until a load succeeds), time of the last success,
+  // whether a request is in flight, and whether the latest request failed.
+  const news = {};
+  NEWS_ORDER.forEach(id => { news[id] = { stories: null, at: null, loading: false, failed: false }; });
+  let newsTab = null;           // the selected category
+  let newsTimer = null;         // refresh timer for the selected category only
+
+  function loadNewsTab() {
+    try {
+      const id = JSON.parse(localStorage.getItem(NEWS_KEY));
+      if (NEWS_ORDER.includes(id)) return id;
+    } catch (e) {}
+    return "politics";
+  }
+  function saveNewsTab(id) {
+    try { localStorage.setItem(NEWS_KEY, JSON.stringify(id)); } catch (e) {}
+  }
+
+  // Returns the URL if it is http(s) (https only when asked), otherwise null.
+  function webUrl(s, httpsOnly) {
+    if (typeof s !== "string" || !s.trim()) return null;
+    try {
+      const u = new URL(s.trim());
+      if (u.protocol === "https:" || (!httpsOnly && u.protocol === "http:")) return u.href;
+    } catch (e) {}
+    return null;
+  }
+  // Feed descriptions are third-party HTML. DOMParser builds an inert document (no scripts, no image loads).
+  function plainText(html) {
+    if (typeof html !== "string" || !html) return "";
+    return new DOMParser().parseFromString(html, "text/html").body.textContent || "";
+  }
+  const squash = s => s.replace(/\s+/g, " ").trim();
+  function shorten(s, max) {
+    if (s.length <= max) return s;
+    let cut = s.slice(0, max);
+    const space = cut.lastIndexOf(" ");
+    if (space > max * 0.6) cut = cut.slice(0, space);
+    return cut.replace(/[\s,.;:!?\-–—]+$/, "") + "…";
+  }
+  // rss2json gives "YYYY-MM-DD HH:MM:SS" in UTC.
+  function parsePubDate(s) {
+    if (typeof s !== "string") return null;
+    const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(s.trim());
+    const t = m ? Date.parse(m[1] + "T" + m[2] + "Z") : NaN;
+    return isFinite(t) ? new Date(t) : null;
+  }
+  function ago(d) {
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return "Just now";
+    if (diff < 3600000) return Math.floor(diff / 60000) + " min ago";
+    if (diff < 86400000) return Math.floor(diff / 3600000) + " h ago";
+    return Math.floor(diff / 86400000) + " d ago";
+  }
+
+  function toStories(items) {
+    const out = [];
+    for (const it of items) {
+      if (out.length >= NEWS_MAX) break;
+      if (!it || typeof it !== "object") continue;
+      const title = typeof it.title === "string" ? squash(it.title) : "";
+      const link = webUrl(it.link, false);
+      if (!title || !link) continue;
+      const enc = it.enclosure && typeof it.enclosure === "object" ? it.enclosure : {};
+      const thumb = webUrl(it.thumbnail, true) ||
+        (typeof enc.type === "string" && enc.type.startsWith("image/") ? webUrl(enc.link, true) : null);
+      let summary = squash(plainText(it.description));
+      if (summary === title) summary = "";
+      out.push({ title, link, thumb, summary: shorten(summary, 200), date: parsePubDate(it.pubDate) });
+    }
+    return out;
+  }
+
+  function storyItem(s, source) {
+    const li = document.createElement("li");
+    li.className = "news-item";
+    if (s.thumb) {
+      const img = document.createElement("img");
+      img.className = "news-thumb";
+      img.alt = "";
+      img.width = 112; img.height = 72;
+      img.setAttribute("loading", "lazy");
+      img.setAttribute("decoding", "async");
+      img.setAttribute("referrerpolicy", "no-referrer");
+      img.addEventListener("error", () => { img.remove(); li.classList.remove("has-thumb"); });
+      img.src = s.thumb;
+      li.classList.add("has-thumb");
+      li.appendChild(img);
+    }
+    const text = document.createElement("div");
+    text.className = "news-text";
+    const a = document.createElement("a");
+    a.className = "news-link";
+    a.href = s.link;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = s.title;
+    const meta = document.createElement("p");
+    meta.className = "news-meta";
+    const src = document.createElement("span");
+    src.textContent = source;
+    meta.appendChild(src);
+    if (s.date) {
+      const t = document.createElement("time");
+      t.dateTime = s.date.toISOString().replace(/\.\d{3}Z$/, "Z");
+      t.textContent = ago(s.date);
+      meta.append(" · ", t);
+    }
+    text.append(a, meta);
+    if (s.summary) {
+      const p = document.createElement("p");
+      p.className = "news-summary";
+      p.textContent = s.summary;
+      text.appendChild(p);
+    }
+    li.appendChild(text);
+    return li;
+  }
+  function newsMessage(cls, text, retry) {
+    const box = document.createElement("div");
+    box.className = cls;
+    const p = document.createElement("p");
+    p.textContent = text;
+    box.appendChild(p);
+    if (retry) {
+      const b = document.createElement("button");
+      b.className = "news-btn news-retry";
+      b.type = "button";
+      b.textContent = "Try again";
+      box.appendChild(b);
+    }
+    return box;
+  }
+
+  const hasStories = c => !!(c.stories && c.stories.length);
+  function setNewsBusy(id) {
+    const c = news[id];
+    newsPanelEl(id).setAttribute("aria-busy", String(c.loading && !hasStories(c)));
+  }
+  // Redraws one panel from its cache. Relative times are recalculated on every redraw.
+  function renderNewsPanel(id) {
+    const c = news[id];
+    const panel = newsPanelEl(id);
+    const focused = panel.contains(document.activeElement) ? document.activeElement : null;
+    const focusHref = focused && focused.matches(".news-link") ? focused.href : null;
+    setNewsBusy(id);
+    panel.textContent = "";
+    if (hasStories(c)) {
+      const ul = document.createElement("ul");
+      ul.className = "news-list";
+      c.stories.forEach(s => ul.appendChild(storyItem(s, NEWS_FEEDS[id].source)));
+      const updated = document.createElement("p");
+      updated.className = "news-updated";
+      updated.textContent = "Updated " + hhmm(c.at);
+      panel.append(ul, updated);
+      if (c.failed) {
+        const stale = document.createElement("p");
+        stale.className = "news-note problem";
+        stale.textContent = "Couldn't update. Showing headlines from " + hhmm(c.at) + ".";
+        panel.appendChild(stale);
+      }
+    } else if (c.loading || (!c.failed && !c.stories)) {
+      const p = document.createElement("p");
+      p.className = "news-loading";
+      p.textContent = "Loading headlines…";
+      panel.appendChild(p);
+    } else if (c.failed) {
+      panel.appendChild(newsMessage("news-error", NEWS_ERROR, true));
+    } else {
+      panel.appendChild(newsMessage("news-error", NEWS_EMPTY, true));
+    }
+    // Keep keyboard focus in place when a redraw replaces the focused control.
+    if (focused && !panel.contains(focused)) {
+      const same = focusHref && Array.from(panel.querySelectorAll(".news-link")).find(l => l.href === focusHref);
+      (same || panel).focus();
+    }
+  }
+  function newsAnnounce(text) {
+    $newsLive.textContent = "";
+    setTimeout(() => { $newsLive.textContent = text; }, 50);
+  }
+
+  // At most one request per category; a late reply fills the cache but only the selected panel is redrawn.
+  function loadNews(id) {
+    const c = news[id];
+    if (c.loading) return;
+    c.loading = true;
+    if (id === newsTab && !hasStories(c)) renderNewsPanel(id);
+    else setNewsBusy(id);
+    fetchJSONWithin("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(NEWS_FEEDS[id].url), NEWS_TIMEOUT_MS)
+      .then(res => {
+        if (!res || res.status !== "ok" || !Array.isArray(res.items)) throw new Error("Unexpected reply");
+        c.stories = toStories(res.items);
+        c.at = new Date();
+        c.failed = false;
+      })
+      .catch(() => { c.failed = true; })
+      .then(() => {
+        c.loading = false;
+        if (id !== newsTab) { setNewsBusy(id); return; }
+        renderNewsPanel(id);
+        if (!hasStories(c)) newsAnnounce(c.failed ? NEWS_ERROR : NEWS_EMPTY);
+      });
+  }
+  function scheduleNews(ms) {
+    clearTimeout(newsTimer);
+    newsTimer = setTimeout(() => {
+      loadNews(newsTab);
+      scheduleNews(NEWS_REFRESH_MS);
+    }, ms);
+  }
+  function selectNewsTab(id) {
+    if (!news[id] || id === newsTab) return;
+    newsTab = id;
+    NEWS_ORDER.forEach(k => {
+      const tab = newsTabEl(k);
+      tab.setAttribute("aria-selected", String(k === id));
+      tab.tabIndex = k === id ? 0 : -1;
+      newsPanelEl(k).hidden = k !== id;
+    });
+    // Cached stories show at once; they are fetched again only when 15 minutes old or never loaded.
+    const c = news[id];
+    const age = c.at ? Date.now() - c.at.getTime() : Infinity;
+    renderNewsPanel(id);
+    if (age >= NEWS_REFRESH_MS) loadNews(id);
+    scheduleNews(age >= NEWS_REFRESH_MS ? NEWS_REFRESH_MS : NEWS_REFRESH_MS - age);
+  }
+
+  $newsTabs.addEventListener("click", e => {
+    const tab = e.target.closest(".news-tab");
+    if (!tab) return;
+    selectNewsTab(tab.dataset.cat);
+    saveNewsTab(newsTab);
+  });
+  $newsTabs.addEventListener("keydown", e => {
+    const tab = e.target.closest(".news-tab");
+    if (!tab || e.metaKey || e.ctrlKey || e.altKey) return;
+    const i = NEWS_ORDER.indexOf(tab.dataset.cat);
+    const n = NEWS_ORDER.length;
+    const next = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    selectNewsTab(NEWS_ORDER[next]);
+    saveNewsTab(newsTab);
+    newsTabEl(newsTab).focus();
+  });
+  $news.addEventListener("click", e => {
+    if (!e.target.closest(".news-retry")) return;
+    const panel = newsPanelEl(newsTab);
+    const hadFocus = panel.contains(document.activeElement);
+    loadNews(newsTab);
+    if (hadFocus && !panel.contains(document.activeElement)) panel.focus();
+  });
+
+  selectNewsTab(loadNewsTab());
 
   renderRadio();
   render();
