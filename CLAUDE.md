@@ -11,6 +11,7 @@ https://github.com/treefinderer/calc1, live at https://treefinderer.github.io/ca
   - `common.js`: helpers shared between features (`window.Tally`: `fetchJSON`, `fetchJSONWithin`, `hhmm`).
   - `calc.js`: calculator, tape, keyboard shortcuts, radio.
   - `weather.js`: weather widget (spec 0001). `news.js`: News section (spec 0002).
+  - `scripts/fetch_news.py` + `.github/workflows/pages.yml` (spec 0003): GitHub Actions fetches the five news feeds every 30 minutes into `news/<id>.json` and deploys the site. Pages source is "GitHub Actions", so every push to `main` deploys through that workflow. `news/` is generated, never committed.
   - A new feature gets its own `.js` file, loaded after `common.js`. Each file is its own IIFE; share only through `window.Tally`.
 - **Tests:** `tests/run.sh` runs the whole suite in headless Chrome in about 4 seconds and prints `RESULT: PASS n/n` or the failing checks (exit 0/1). All network calls and audio are mocked in `tests/tests.js`. Opening http://localhost:8000/tests/ shows the same results in a browser.
 - Colors are CSS tokens on `:root` with dark-mode overrides. New colors must be tokens too.

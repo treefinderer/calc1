@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sample RSS 2.0 feed for the fetch_news.py selftest (spec 0003). 12 items, one with a javascript: link. -->
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Sample feed</title>
+    <link>https://www.bbc.co.uk/news</link>
+    <description>Offline fixture</description>
+    <item>
+      <title>Summit opens in Geneva</title>
+      <link>https://www.bbc.co.uk/news/world-1</link>
+      <description><![CDATA[<p>Leaders meet in <b>Geneva</b> &amp; talk &quot;trade&quot;.</p><script>alert(1)</script>]]></description>
+      <pubDate>Wed, 22 Oct 2026 10:00:00 +0200</pubDate>
+      <media:thumbnail width="240" height="135" url="https://example.com/thumb.jpg"/>
+    </item>
+    <item>
+      <title>Bad link</title>
+      <link>javascript:alert(1)</link>
+      <description>Skipped</description>
+      <pubDate>Wed, 22 Oct 2026 07:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Chip makers rally</title>
+      <link>https://www.cnbc.com/2026/10/22/chips.html</link>
+      <description>Shares &lt;i&gt;rose&lt;/i&gt; sharply.</description>
+      <pubDate>Wed, 22 Oct 2026 07:00:00 -0400</pubDate>
+      <media:content url="https://example.com/content.jpg" medium="image"/>
+    </item>
+    <item>
+      <title>Rocket lands</title>
+      <link>http://www.bbc.co.uk/news/science-1</link>
+      <description>Booster returns safely.</description>
+      <pubDate>Wed, 22 Oct 2026 06:45:00 GMT</pubDate>
+      <enclosure url="https://example.com/enclosure.jpg" type="image/jpeg" length="1000"/>
+    </item>
+    <item>
+      <title>Plain http image</title>
+      <link>https://www.bbc.co.uk/sport/football-1</link>
+      <description>Only an http thumbnail.</description>
+      <pubDate>Wed, 22 Oct 2026 06:30:00 GMT</pubDate>
+      <media:thumbnail url="http://example.com/insecure.jpg"/>
+    </item>
+    <item>
+      <title>Long summary</title>
+      <link>https://www.cnbc.com/2026/10/22/long.html</link>
+      <description>Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures. Markets moved again today as traders weighed the latest figures.</description>
+      <pubDate>Wed, 22 Oct 2026 06:15:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 1</title>
+      <link>https://www.bbc.co.uk/news/filler-1</link>
+      <description>Filler summary 1</description>
+      <pubDate>Wed, 22 Oct 2026 01:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 2</title>
+      <link>https://www.bbc.co.uk/news/filler-2</link>
+      <description>Filler summary 2</description>
+      <pubDate>Wed, 22 Oct 2026 02:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 3</title>
+      <link>https://www.bbc.co.uk/news/filler-3</link>
+      <description>Filler summary 3</description>
+      <pubDate>Wed, 22 Oct 2026 03:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 4</title>
+      <link>https://www.bbc.co.uk/news/filler-4</link>
+      <description>Filler summary 4</description>
+      <pubDate>Wed, 22 Oct 2026 04:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 5</title>
+      <link>https://www.bbc.co.uk/news/filler-5</link>
+      <description>Filler summary 5</description>
+      <pubDate>Wed, 22 Oct 2026 05:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Filler story 6</title>
+      <link>https://www.bbc.co.uk/news/filler-6</link>
+      <description>Filler summary 6</description>
+      <pubDate>Wed, 22 Oct 2026 06:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

@@ -1,9 +1,11 @@
 #!/bin/sh
-# Runs the test suite (tests/index.html) in headless Chrome and prints its results.
-# Exits 0 when every check passes, 1 otherwise. Set CHROME to use another Chrome binary.
+# Runs the news script's offline selftest, then the test suite (tests/index.html) in headless Chrome, and prints the results.
+# Exits 0 when both pass, 1 otherwise. Set CHROME to use another Chrome binary.
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+SELFTEST=0
+python3 "$ROOT/scripts/fetch_news.py" --selftest || SELFTEST=1
 CHROME=${CHROME:-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"}
 PORT=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
 PROFILE=$(mktemp -d "${TMPDIR:-/tmp}/tally-chrome.XXXXXX")
@@ -43,3 +45,4 @@ if not lines or not lines[-1].startswith("RESULT: "):
 print(text)
 sys.exit(0 if lines[-1].startswith("RESULT: PASS") else 1)
 '
+exit "$SELFTEST"

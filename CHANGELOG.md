@@ -2,6 +2,7 @@
 
 ## 2026-10-22
 
+- Newsfeed fixed: headlines are now fetched every 30 minutes by a GitHub Action and served from the site itself, instead of through rss2json. ([spec 0003](docs/specs/0003-news-from-github-action.md))
 - Behind the scenes: the page is split into style.css and one script per feature, with an automated test suite (tests/run.sh). No visible change.
 
 ## 2026-10-19

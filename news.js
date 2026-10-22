@@ -1,19 +1,14 @@
 (function () {
   const { fetchJSONWithin, hhmm } = window.Tally;
 
-  // News: headlines per category from public RSS feeds, converted to JSON by rss2json.
+  // News: headlines per category, fetched from public RSS feeds by a scheduled GitHub Action
+  // (scripts/fetch_news.py) and served from the same site as news/<id>.json.
   const NEWS_KEY = "tally-news-tab-v1";
   const NEWS_REFRESH_MS = 15 * 60 * 1000;
   const NEWS_TIMEOUT_MS = 15000;
   const NEWS_MAX = 10;
   const NEWS_ORDER = ["politics", "technology", "science", "stocks", "sports"];
-  const NEWS_FEEDS = {
-    politics: { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC News" },
-    technology: { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC News" },
-    science: { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "BBC News" },
-    stocks: { url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069", source: "CNBC" },
-    sports: { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport" }
-  };
+  const NEWS_SOURCES = { politics: "BBC News", technology: "BBC News", science: "BBC News", stocks: "CNBC", sports: "BBC Sport" };
   const NEWS_ERROR = "Couldn't load the headlines.";
   const NEWS_EMPTY = "No stories in this category right now.";
   const $news = document.getElementById("news");
@@ -23,9 +18,9 @@
   const newsPanelEl = id => document.getElementById("newsPanel-" + id);
 
   // Session cache per category: stories (null until a load succeeds), time of the last success,
-  // whether a request is in flight, and whether the latest request failed.
+  // when the server fetched those stories, whether a request is in flight, and whether the latest request failed.
   const news = {};
-  NEWS_ORDER.forEach(id => { news[id] = { stories: null, at: null, loading: false, failed: false }; });
+  NEWS_ORDER.forEach(id => { news[id] = { stories: null, at: null, updated: null, loading: false, failed: false }; });
   let newsTab = null;           // the selected category
   let newsTimer = null;         // refresh timer for the selected category only
 
@@ -49,7 +44,7 @@
     } catch (e) {}
     return null;
   }
-  // Feed descriptions are third-party HTML. DOMParser builds an inert document (no scripts, no image loads).
+  // Feed summaries are third-party text. DOMParser builds an inert document (no scripts, no image loads).
   function plainText(html) {
     if (typeof html !== "string" || !html) return "";
     return new DOMParser().parseFromString(html, "text/html").body.textContent || "";
@@ -62,11 +57,10 @@
     if (space > max * 0.6) cut = cut.slice(0, space);
     return cut.replace(/[\s,.;:!?\-–—]+$/, "") + "…";
   }
-  // rss2json gives "YYYY-MM-DD HH:MM:SS" in UTC.
-  function parsePubDate(s) {
-    if (typeof s !== "string") return null;
-    const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(s.trim());
-    const t = m ? Date.parse(m[1] + "T" + m[2] + "Z") : NaN;
+  // Dates in news/<id>.json are ISO UTC, "YYYY-MM-DDTHH:MM:SSZ".
+  function parseIsoUtc(s) {
+    if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(s.trim())) return null;
+    const t = Date.parse(s.trim());
     return isFinite(t) ? new Date(t) : null;
   }
   function ago(d) {
@@ -85,12 +79,11 @@
       const title = typeof it.title === "string" ? squash(it.title) : "";
       const link = webUrl(it.link, false);
       if (!title || !link) continue;
-      const enc = it.enclosure && typeof it.enclosure === "object" ? it.enclosure : {};
-      const thumb = webUrl(it.thumbnail, true) ||
-        (typeof enc.type === "string" && enc.type.startsWith("image/") ? webUrl(enc.link, true) : null);
-      let summary = squash(plainText(it.description));
+      const thumb = webUrl(it.thumbnail, true);
+      // The summary should already be plain text; parsing it again keeps stray markup inert.
+      let summary = squash(plainText(it.summary));
       if (summary === title) summary = "";
-      out.push({ title, link, thumb, summary: shorten(summary, 200), date: parsePubDate(it.pubDate) });
+      out.push({ title, link, thumb, summary: shorten(summary, 200), date: parseIsoUtc(it.pubDate) });
     }
     return out;
   }
@@ -172,15 +165,15 @@
     if (hasStories(c)) {
       const ul = document.createElement("ul");
       ul.className = "news-list";
-      c.stories.forEach(s => ul.appendChild(storyItem(s, NEWS_FEEDS[id].source)));
+      c.stories.forEach(s => ul.appendChild(storyItem(s, NEWS_SOURCES[id])));
       const updated = document.createElement("p");
       updated.className = "news-updated";
-      updated.textContent = "Updated " + hhmm(c.at);
+      updated.textContent = "Updated " + hhmm(c.updated);
       panel.append(ul, updated);
       if (c.failed) {
         const stale = document.createElement("p");
         stale.className = "news-note problem";
-        stale.textContent = "Couldn't update. Showing headlines from " + hhmm(c.at) + ".";
+        stale.textContent = "Couldn't update. Showing headlines from " + hhmm(c.updated) + ".";
         panel.appendChild(stale);
       }
     } else if (c.loading || (!c.failed && !c.stories)) {
@@ -211,11 +204,12 @@
     c.loading = true;
     if (id === newsTab && !hasStories(c)) renderNewsPanel(id);
     else setNewsBusy(id);
-    fetchJSONWithin("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(NEWS_FEEDS[id].url), NEWS_TIMEOUT_MS)
+    fetchJSONWithin("news/" + id + ".json", NEWS_TIMEOUT_MS)
       .then(res => {
-        if (!res || res.status !== "ok" || !Array.isArray(res.items)) throw new Error("Unexpected reply");
+        if (!res || res.error === true || !Array.isArray(res.items)) throw new Error("Unexpected reply");
         c.stories = toStories(res.items);
         c.at = new Date();
+        c.updated = parseIsoUtc(res.fetchedAt) || c.at;
         c.failed = false;
       })
       .catch(() => { c.failed = true; })

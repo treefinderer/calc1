@@ -17,26 +17,30 @@
     current: { temperature_2m: f ? 70.3 : 21.3, apparent_temperature: f ? 68.2 : 20.1, weather_code: 2, wind_speed_10m: f ? 7.2 : 11.6, is_day: 1 },
     daily: { temperature_2m_max: [f ? 74.1 : 23.4], temperature_2m_min: [f ? 54 : 12.2] }
   });
+  // news/<id>.json as written by scripts/fetch_news.py (spec 0003).
   const NEWS = {
-    status: "ok",
+    source: "BBC News",
+    fetchedAt: "2026-10-22T06:07:00Z",
     items: [
-      { title: "Summit opens in Geneva", link: "https://www.bbc.co.uk/news/world-1", pubDate: "2026-10-22 08:00:00",
-        description: '<img src=x onerror="window.__xss=1">Hello <b>world</b>', thumbnail: "", enclosure: {} },
-      { title: "Bad link", link: "javascript:window.__xss=2", pubDate: "2026-10-22 07:00:00", description: "Skipped" },
+      { title: "Summit opens in Geneva", link: "https://www.bbc.co.uk/news/world-1", pubDate: "2026-10-22T08:00:00Z",
+        summary: '<img src=x onerror="window.__xss=1">Hello <b>world</b>', thumbnail: "https://ichef.bbci.co.uk/a.jpg" },
+      { title: "Bad link", link: "javascript:window.__xss=2", pubDate: "2026-10-22T07:00:00Z", summary: "Skipped", thumbnail: null },
       { title: "Averyveryverylongunbrokenheadlinewordthatwouldwidenthepageonphonesifitdidnotwrapproperly", link: "https://www.bbc.co.uk/news/world-2",
-        pubDate: "2026-10-22 06:00:00", description: "Second story" }
+        pubDate: "2026-10-22T06:00:00Z", summary: "Second story", thumbnail: "http://ichef.bbci.co.uk/b.jpg" }
     ]
   };
+  const NEWS_FILES = ["politics", "technology", "science", "stocks", "sports"].map(id => "news/" + id + ".json");
 
   // --- Mocks, called from inside the page by the script injected below ---
-  const mock = { calls: [], failNews: false, plays: 0, errors: [] };
+  // newsReply, when set, replaces the NEWS fixture as the body of every news/<id>.json reply.
+  const mock = { calls: [], failNews: false, newsReply: null, plays: 0, errors: [] };
   window.TallyTest = {
     // Returns the reply body as JSON text, or null for a network failure.
     respond(url) {
       mock.calls.push(url);
       if (url.startsWith("https://geocoding-api.open-meteo.com/")) return JSON.stringify(GEO);
       if (url.startsWith("https://api.open-meteo.com/v1/forecast")) return JSON.stringify(forecast(url.includes("temperature_unit=fahrenheit")));
-      if (url.startsWith("https://api.rss2json.com/") && !mock.failNews) return JSON.stringify(NEWS);
+      if (NEWS_FILES.includes(url) && !mock.failNews) return JSON.stringify(mock.newsReply || NEWS);
       return null;
     },
     play() { mock.plays++; },
@@ -57,11 +61,13 @@
   HTMLMediaElement.prototype.play = function () { T.play(); return Promise.resolve(); };
   HTMLMediaElement.prototype.pause = function () {};
   HTMLMediaElement.prototype.load = function () {};
-  // Stream URLs are stored, never loaded.
-  Object.defineProperty(HTMLMediaElement.prototype, "src", {
-    configurable: true,
-    get: function () { return this.__src || ""; },
-    set: function (v) { this.__src = String(v); }
+  // Stream and image URLs are stored, never loaded.
+  [HTMLMediaElement, HTMLImageElement].forEach(function (C) {
+    Object.defineProperty(C.prototype, "src", {
+      configurable: true,
+      get: function () { return this.__src || ""; },
+      set: function (v) { this.__src = String(v); }
+    });
   });
 })();
 <\/script>`;
@@ -93,7 +99,7 @@
   const display = () => $("main").textContent;
   const callsTo = prefix => mock.calls.filter(u => u.startsWith(prefix));
   const forecastCalls = () => callsTo("https://api.open-meteo.com/v1/forecast");
-  const newsFeeds = () => callsTo("https://api.rss2json.com/").map(u => new URL(u).searchParams.get("rss_url"));
+  const newsFeeds = () => mock.calls.filter(u => /news|bbci|cnbc/i.test(u));
   function clearStore() {
     Object.keys(localStorage).filter(k => STORE.test(k)).forEach(k => localStorage.removeItem(k));
   }
@@ -210,15 +216,24 @@
     }));
     const sel = () => tabs.map(t => t.getAttribute("aria-selected") + "/" + t.tabIndex).join(" ");
     eq("Politics selected first, others out of the tab order", sel(), "true/0 false/-1 false/-1 false/-1 false/-1");
-    const feeds = newsFeeds();
-    ok("first load fetches only the Politics (BBC World) feed",
-      feeds.length === 1 && feeds[0] === "https://feeds.bbci.co.uk/news/world/rss.xml", feeds.join(" "));
+    eq("first load makes one request, to news/politics.json", newsFeeds().join(" "), "news/politics.json");
+    eq("credit line names the sources only", doc.querySelector(".news-credit").textContent, "Headlines from BBC News, BBC Sport and CNBC.");
     const panel = $("newsPanel-politics");
     ok("stories render, javascript: item skipped", panel.querySelectorAll(".news-item").length === 2 &&
       !Array.from(doc.querySelectorAll("a")).some(a => /^\s*javascript:/i.test(a.getAttribute("href") || "")), panel.textContent);
+    const first = panel.querySelector(".news-item");
+    const time = first && first.querySelector(".news-meta time");
+    ok("story shows headline link, source and time", first && first.querySelector(".news-link").href === "https://www.bbc.co.uk/news/world-1" &&
+      first.querySelector(".news-meta span").textContent === "BBC News" && time && time.dateTime === "2026-10-22T08:00:00Z",
+      first && first.innerHTML);
+    const thumbs = Array.from(panel.querySelectorAll("img.news-thumb")).map(i => i.src);
+    eq("https thumbnail shown, http thumbnail dropped", thumbs.join(" "), "https://ichef.bbci.co.uk/a.jpg");
     const summary = panel.querySelector(".news-summary");
-    ok("HTML description shows as plain text", summary && summary.textContent === "Hello world" && !panel.querySelector("img, b"),
+    ok("summary shows as plain text", summary && summary.textContent === "Hello world" && !summary.children.length && !panel.querySelector("b"),
       summary && summary.innerHTML);
+    const at = new Date(NEWS.fetchedAt);
+    const hm = String(at.getHours()).padStart(2, "0") + ":" + String(at.getMinutes()).padStart(2, "0");
+    eq("Updated time comes from fetchedAt", panel.querySelector(".news-updated").textContent, "Updated " + hm);
     await wait(100);
     eq("description markup never runs", win.__xss, undefined);
     const tech = $("newsTab-technology");
@@ -235,7 +250,7 @@
     mock.calls = [];
     await loadPage(1280);
     eq("End then ArrowLeft lands on Stock Market, restored after reload", $("newsTab-stocks").getAttribute("aria-selected"), "true");
-    eq("reload fetches only that feed", newsFeeds().join(" "), "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069");
+    eq("reload fetches only that file", newsFeeds().join(" "), "news/stocks.json");
     mock.failNews = true;
     $("newsTab-science").click();
     await wait(150);
@@ -248,6 +263,23 @@
     if (retry) retry.click();
     await wait(150);
     eq("Try again recovers", science.querySelectorAll(".news-item").length, 2);
+    mock.newsReply = { items: [], error: true };
+    $("newsTab-sports").click();
+    await wait(150);
+    const sports = $("newsPanel-sports");
+    ok("error: true shows the error with Try again", sports.querySelector(".news-error p") &&
+      sports.querySelector(".news-error p").textContent === "Couldn't load the headlines." && sports.querySelector(".news-retry"), sports.textContent);
+    mock.newsReply = { items: [] };
+    sports.querySelector(".news-retry").click();
+    await wait(150);
+    eq("no items shows the empty message", sports.textContent.replace("Try again", ""), "No stories in this category right now.");
+    mock.newsReply = null;
+    clearStore();
+    mock.calls = [];
+    await loadPage(1280);
+    ["technology", "science", "stocks", "sports"].forEach(id => $("newsTab-" + id).click());
+    await wait(150);
+    eq("each tab requests its own news/<id>.json, never a feed URL", newsFeeds().join(" "), NEWS_FILES.join(" "));
   }
 
   async function layout() {
@@ -285,7 +317,7 @@
         h.textContent = name;
         $log.appendChild(h);
         clearStore();
-        Object.assign(mock, { calls: [], failNews: false, plays: 0 });
+        Object.assign(mock, { calls: [], failNews: false, newsReply: null, plays: 0 });
         try { await fn(); } catch (e) { ok("group ran to the end", false, e && e.stack ? e.stack.split("\n")[0] : String(e)); }
       }
       group = "Console";
