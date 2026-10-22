@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-22
+
+- Behind the scenes: the page is split into style.css and one script per feature, with an automated test suite (tests/run.sh). No visible change.
+
 ## 2026-10-19
 
 - News section below the calculator: browse the latest headlines in five category tabs. ([spec 0002](docs/specs/0002-newsfeed.md))
