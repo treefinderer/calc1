@@ -7,7 +7,7 @@ description: ADLC stage 5 for the Tally Calculator - ship a feature branch that 
 
 The orchestrator runs this itself, without an agent. The owner said on 2026-10-19 not to ask them to merge, so don't ask for approval to push or merge.
 
-Before you start, both of these must be true: the review said APPROVE, and `tests/run.sh` prints `RESULT: PASS`.
+Before you start, all of these must be true: the review said APPROVE, QA reported PASS (its `docs/qa/NNNN-slug.md` is committed), and `tests/run.sh` prints `RESULT: PASS`.
 
 ## 1. Finish the branch
 
@@ -21,7 +21,7 @@ On `feature/NNNN-slug`:
 Run each command on its own, not joined with `&&`. Each one is allowed separately in `.claude/settings.local.json`.
 1. `git switch main`
 2. `git pull --ff-only origin main`
-3. `git merge --no-ff feature/NNNN-slug -m "Merge feature/NNNN-slug: <summary> (spec NNNN)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`
+3. `git merge --no-ff feature/NNNN-slug -m "Merge feature/NNNN-slug: <summary> (spec NNNN)" -m "<the Co-Authored-By line this session uses>"`
 4. `GIT_TERMINAL_PROMPT=0 git push origin main`. A hook runs `tests/run.sh` first and blocks the push if it fails.
 
 Stop and tell the owner if any step is refused, asks for a login, or hits a conflict. Don't work around it.
